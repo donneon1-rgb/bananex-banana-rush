@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Bananex Banana Rush</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+body{margin:0;background:#111a0d;color:white;font-family:Arial;text-align:center}
+h1{color:#d9ff45;font-size:35px}
+main{max-width:600px;margin:auto;padding:15px}
+canvas{width:100%;background:#20351b;border-radius:15px;touch-action:pan-y}
+button{background:#d9ff45;color:#17200c;border:0;border-radius:12px;padding:15px 25px;font-size:20px;font-weight:bold;margin:8px}
+.stat{display:inline-block;margin:8px;color:#d9ff45;font-size:20px}
+a{color:#d9ff45}
+</style>
+</head>
+<body>
+<main>
+<h1>🍌 BANANEX</h1>
+<div class="stat">Очки: <span id="score">0</span></div>
+<div class="stat">Бананы: <span id="coins">0</span></div>
+<canvas id="game" width="600" height="340"></canvas>
+<div>
+<button onclick="move(-1)">◀</button>
+<button onclick="move(1)">▶</button>
+</div>
+<button onclick="start()">ИГРАТЬ</button>
+<p>Собирай бананы и избегай камней!</p>
+<p><a href="https://bananex.io">bananex.io</a></p>
+</main>
+<script>
+const tg=window.Telegram?.WebApp;
+tg?.ready();
+tg?.expand();
+
+const c=document.getElementById('game');
+const x=c.getContext('2d');
+let lane=1,items=[],score=0,coins=0,active=false,tick=0;
+const pos=[110,300,490];
+
+function move(d){
+ if(active)lane=Math.max(0,Math.min(2,lane+d));
+}
+function start(){
+ lane=1;items=[];score=0;coins=0;tick=0;active=true;
+ document.getElementById('score').textContent=0;
+ document.getElementById('coins').textContent=0;
+ requestAnimationFrame(loop);
+}
+function loop(){
+ if(!active)return;
+ tick++;
+ x.clearRect(0,0,600,340);
+ x.fillStyle='#20351b';x.fillRect(0,0,600,340);
+ x.strokeStyle='#526b36';x.setLineDash([15,15]);
+ x.beginPath();x.moveTo(205,0);x.lineTo(205,340);
+ x.moveTo(395,0);x.lineTo(395,340);x.stroke();
+ x.setLineDash([]);
+
+ if(tick%48===0){
+ items.push({lane:Math.floor(Math.random()*3),y:-20,banana:Math.random()>.35});
+ }
+ for(let i=items.length-1;i>=0;i--){
+  let a=items[i];a.y+=4+score/500;
+  x.font='32px Arial';x.textAlign='center';
+  x.fillText(a.banana?'🍌':'🪨',pos[a.lane],a.y);
+  if(a.y>265&&a.y<315&&a.lane===lane){
+   if(a.banana){
+    coins++;score+=25;
+    document.getElementById('coins').textContent=coins;
+    items.splice(i,1);continue;
+   }else{
+    active=false;tg?.HapticFeedback?.notificationOccurred('error');
+    alert('Игра окончена! Очки: '+score);
+    return;
+   }
+  }
+  if(a.y>360)items.splice(i,1);
+ }
+ x.font='55px Arial';x.fillText('🍌',pos[lane],295);
+ score++;document.getElementById('score').textContent=score;
+ requestAnimationFrame(loop);
+}
+document.addEventListener('keydown',e=>{
+ if(e.key==='ArrowLeft'||e.key==='a')move(-1);
+ if(e.key==='ArrowRight'||e.key==='d')move(1);
+});
+let sx=0;
+c.addEventListener('touchstart',e=>sx=e.touches[0].clientX);
+c.addEventListener('touchend',e=>{
+ let d=e.changedTouches[0].clientX-sx;
+ if(Math.abs(d)>25)move(d>0?1:-1);
+});
+</script>
+</body>
+  </html>
